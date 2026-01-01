@@ -1,86 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Minimal Messaging Site</title>
+  <meta charset="UTF-8" />
+  <title>Minimal Yewilsaw — Realtime Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #eee;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
+      font-family: system-ui, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
       height: 100vh;
     }
     header {
-      background: #222;
-      padding: 10px;
-      text-align: center;
+      padding: 12px;
+      background: #1e293b;
+      color: #fff;
       font-weight: bold;
     }
     #chat-log {
-      flex: 1;
-      padding: 10px;
+      padding: 16px;
       overflow-y: auto;
-      background: #181818;
+      background: #111827;
     }
-    #chat-form {
-      display: flex;
-      border-top: 1px solid #333;
-      background: #222;
+    .msg {
+      max-width: 80%;
       padding: 10px;
+      margin: 6px 0;
+      border-radius: 12px;
+      word-wrap: break-word;
+      position: relative;
     }
-    #chat-input {
-      flex: 1;
-      padding: 8px;
-      border: none;
-      border-radius: 4px;
-      margin-right: 10px;
+    .me { margin-left: auto; background: #22c55e; color: #000; }
+    .other { margin-right: auto; background: #374151; color: #fff; }
+    .timestamp {
+      font-size: 10px;
+      color: #94a3b8;
+      position: absolute;
+      bottom: -14px;
+      right: 8px;
     }
-    #send-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      background: #4caf50;
-      color: white;
+    .reactions {
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    .reaction-btn {
       cursor: pointer;
+      margin-left: 6px;
     }
-    #send-btn:hover {
-      background: #45a049;
+    form {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: #1e293b;
     }
-    .message {
-      margin: 5px 0;
-      padding: 8px;
-      background: #333;
-      border-radius: 4px;
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+    button {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #3b82f6;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <header>Minimal Messaging Site</header>
-  <div id="chat-log"></div>
+  <header>Minimal Yewilsaw — Realtime Chat</header>
+  <main id="chat-log"></main>
   <form id="chat-form">
-    <input id="chat-input" type="text" placeholder="Type a message..." autocomplete="off" />
-    <button id="send-btn" type="submit">Send</button>
+    <input id="chat-input" type="text" placeholder="Type a message…" />
+    <button type="submit">Send</button>
   </form>
 
-  <script>
-    const chatLog = document.getElementById('chat-log');
-    const chatForm = document.getElementById('chat-form');
-    const chatInput = document.getElementById('chat-input');
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, updateDoc, doc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-    chatForm.addEventListener('submit', function(e) {
+    // 🔑 Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
+      authDomain: "university-outreach-log.firebaseapp.com",
+      databaseURL: "https://university-outreach-log-default-rtdb.firebaseio.com",
+      projectId: "university-outreach-log",
+      storageBucket: "university-outreach-log.firebasestorage.app",
+      messagingSenderId: "566149647802",
+      appId: "1:566149647802:web:bd68f2e2c18a36da732183",
+      measurementId: "G-R740JG57C4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUid = null;
+    const chatLog = document.getElementById("chat-log");
+    const chatForm = document.getElementById("chat-form");
+    const chatInput = document.getElementById("chat-input");
+
+    function renderMessage(doc) {
+      const d = doc.data();
+      const div = document.createElement("div");
+      div.className = "msg " + (d.uid === currentUid ? "me" : "other");
+      div.textContent = d.text;
+
+      // Timestamp
+      if (d.createdAt?.toDate) {
+        const ts = document.createElement("div");
+        ts.className = "timestamp";
+        const date = d.createdAt.toDate();
+        ts.textContent = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        div.appendChild(ts);
+      }
+
+      // Reactions
+      if (d.reactions && d.reactions.length > 0) {
+        const reactDiv = document.createElement("div");
+        reactDiv.className = "reactions";
+        reactDiv.textContent = d.reactions.join(" ");
+        div.appendChild(reactDiv);
+      }
+
+      // Reaction button
+      const btn = document.createElement("span");
+      btn.className = "reaction-btn";
+      btn.textContent = "😀";
+      btn.onclick = async () => {
+        const ref = doc.ref;
+        const newReactions = (d.reactions || []).concat("😀");
+        await updateDoc(ref, { reactions: newReactions });
+      };
+      div.appendChild(btn);
+
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function sendMessage(text) {
+      await addDoc(collection(db, "messages"), {
+        text,
+        uid: currentUid,
+        createdAt: serverTimestamp(),
+        reactions: []
+      });
+    }
+
+    function startRealtime() {
+      const q = query(collection(db, "messages"), orderBy("createdAt", "asc"));
+      onSnapshot(q, (snap) => {
+        chatLog.innerHTML = "";
+        snap.forEach(renderMessage);
+      });
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUid = user.uid;
+        startRealtime();
+      } else {
+        signInAnonymously(auth);
+      }
+    });
+
+    chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text) return;
-      const msg = document.createElement('div');
-      msg.className = 'message';
-      msg.textContent = 'You: ' + text;
-      chatLog.appendChild(msg);
-      chatInput.value = '';
-      chatLog.scrollTop = chatLog.scrollHeight;
+      chatInput.value = "";
+      await sendMessage(text);
     });
   </script>
 </body>
