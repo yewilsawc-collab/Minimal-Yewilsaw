@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yewilsaw Chat | Secure Messaging</title>
+    <title>Elementa | P2P Social Network</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-  
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-header { backdrop-filter: blur(12px); background: rgba(255, 255, 255, 0.8); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
     <script id="firebase-config" type="application/json">
   {
 "apiKey": "AIzaSyB9fmgduk-bcSRTPL6FdcKKgqvTtQoICpE",
@@ -17,72 +25,203 @@
     "messagingSenderId": "566149647802",
     "appId": "1:566149647802:web:490c7cc3d10b7cd7732183"
   }
-      <style>
-      .chat-container { height: calc(100vh - 160px); }
-        .message-bubble { max-width: 80%; }
-        /* Hide scrollbar but keep functionality */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-    </style>
+    </script>
 </head>
-<body class="bg-slate-100 h-screen flex flex-col">
-  
-  </style>
-</head>
-<body class="bg-slate-100 h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
 
-    <header class="bg-white border-b px-6 py-4 flex justify-between items-center shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">JD</div>
-            <div>
-                <h2 class="font-bold leading-none">Guest User</h2>
-                <span class="text-xs text-green-500 font-medium">Online</span>
-            </div>
-        </div>
-        <div class="flex gap-4 text-slate-500">
-            <i class="fa-solid fa-phone cursor-pointer hover:text-blue-600"></i>
-            <i class="fa-solid fa-video cursor-pointer hover:text-blue-600"></i>
-            <i class="fa-solid fa-ellipsis-vertical cursor-pointer hover:text-blue-600"></i>
-        </div>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-    <main id="chat-window" class="flex-grow overflow-y-auto p-4 space-y-4 no-scrollbar">
-        <div class="flex justify-start">
-            <div class="message-bubble bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-slate-200">
-                <p class="text-sm">Hey! Have you seen the new design update?</p>
-                <span class="text-[10px] text-slate-400 block mt-1 text-right">09:41 AM</span>
-            </div>
-        </div>
+        // --- Icon Component Wrapper ---
+        const Icon = ({ name, className = "w-5 h-5" }) => {
+            const [iconSvg, setIconSvg] = useState('');
+            useEffect(() => {
+                if (window.lucide) {
+                    const icon = window.lucide.icons[name];
+                    if (icon) setIconSvg(icon.toSvg({ class: className }));
+                }
+            }, [name, className]);
+            return <span dangerouslySetInnerHTML={{ __html: iconSvg }} />;
+        };
 
-        <div class="flex justify-end">
-            <div class="message-bubble bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-md">
-                <p class="text-sm">Not yet! Is it mobile-friendly?</p>
-                <span class="text-[10px] text-blue-200 block mt-1 text-right">09:42 AM</span>
-            </div>
-        </div>
-    </main>
+        function App() {
+            const [activeTab, setActiveTab] = useState('home'); // 'home', 'messages', 'network'
+            const [newPost, setNewPost] = useState("");
+            const [posts, setPosts] = useState([
+                { id: 1, author: "Alex Chen", avatar: "AC", content: "Just launched the Elementa P2P protocol. Privacy is the new standard! 🔐", timestamp: "2h ago", likes: 42, isLiked: false },
+                { id: 2, author: "Sarah Martinez", avatar: "SM", content: "Code should be clean, readable, and decentralized. 🌐", timestamp: "4h ago", likes: 128, isLiked: true }
+            ]);
+            const [messages, setMessages] = useState([
+                { id: 1, text: "Is the peer discovery active?", isMe: false, time: "12:01" },
+                { id: 2, text: "Yes, fully encrypted and direct.", isMe: true, time: "12:02" }
+            ]);
+            const [currentChat, setCurrentChat] = useState("");
 
-    <footer class="bg-white border-t p-4 pb-8 md:pb-4">
-        <form id="chat-form" class="max-w-4xl mx-auto flex gap-3 items-center">
-            <button type="button" class="text-slate-400 hover:text-blue-600">
-                <i class="fa-solid fa-paperclip text-xl"></i>
-            </button>
-            <input 
-                id="msg-input"
-                type="text" 
-                placeholder="Type a message..." 
-                class="flex-grow bg-slate-100 rounded-full px-5 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autocomplete="off"
-            >
-            <button type="submit" class="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-blue-700 transition shadow-lg">
-                <i class="fa-solid fa-paper-plane"></i>
-            </button>
-          
-       
-        </form>      
-    </footer>
+            const currentUser = { name: "Yewilsaw Chanie", handle: "@y_chanie", avatar: "YC" };
 
-    <script src="chat.js"></script>
+            const handlePost = () => {
+                if (!newPost.trim()) return;
+                const post = { id: Date.now(), author: currentUser.name, avatar: currentUser.avatar, content: newPost, timestamp: "Just now", likes: 0, isLiked: false };
+                setPosts([post, ...posts]);
+                setNewPost("");
+            };
+
+            const handleSendMsg = () => {
+                if (!currentChat.trim()) return;
+                setMessages([...messages, { id: Date.now(), text: currentChat, isMe: true, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }]);
+                setCurrentChat("");
+            };
+
+            return (
+                <div className="min-h-screen">
+                    {/* Navigation */}
+                    <header className="sticky top-0 z-50 border-b border-slate-200 glass-header">
+                        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+                            <div className="flex items-center space-x-8">
+                                <h1 className="text-2xl font-black bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">Elementa</h1>
+                                <nav className="hidden md:flex space-x-1">
+                                    {['home', 'network', 'messages'].map(tab => (
+                                        <button 
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`px-4 py-2 rounded-full capitalize font-medium transition-all ${activeTab === tab ? 'bg-violet-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100'}`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-white font-bold text-xs">{currentUser.avatar}</div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* Sidebar */}
+                        <aside className="lg:col-span-3 space-y-6">
+                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 text-center">
+                                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-violet-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mb-4 shadow-lg">
+                                    {currentUser.avatar}
+                                </div>
+                                <h2 className="font-bold text-lg">{currentUser.name}</h2>
+                                <p className="text-slate-400 text-sm mb-4">{currentUser.handle}</p>
+                                <div className="grid grid-cols-2 border-t pt-4">
+                                    <div><p className="font-bold">1.2k</p><p className="text-xs text-slate-400">Followers</p></div>
+                                    <div><p className="font-bold">567</p><p className="text-xs text-slate-400">Following</p></div>
+                                </div>
+                            </div>
+                        </aside>
+
+                        {/* Main Feed or Messaging View */}
+                        <div className="lg:col-span-6 space-y-6">
+                            {activeTab === 'home' ? (
+                                <>
+                                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+                                        <textarea 
+                                            value={newPost}
+                                            onChange={(e) => setNewPost(e.target.value)}
+                                            placeholder="What's on your mind?" 
+                                            className="w-full bg-slate-50 rounded-xl p-4 border-none focus:ring-2 focus:ring-violet-500 outline-none transition-all"
+                                            rows="3"
+                                        />
+                                        <div className="flex justify-between items-center mt-3">
+                                            <span className="text-xs text-slate-400 flex items-center font-medium">
+                                                <Icon name="Shield" className="w-3 h-3 mr-1 text-green-500" /> P2P Encrypted
+                                            </span>
+                                            <button onClick={handlePost} className="bg-violet-600 text-white px-6 py-2 rounded-full font-bold hover:bg-violet-700 transition-colors">Post</button>
+                                        </div>
+                                    </div>
+
+                                    {posts.map(post => (
+                                        <div key={post.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                                            <div className="flex items-center space-x-3 mb-4">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">{post.avatar}</div>
+                                                <div>
+                                                    <p className="font-bold text-sm">{post.author}</p>
+                                                    <p className="text-xs text-slate-400">{post.timestamp}</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-slate-700 leading-relaxed mb-4">{post.content}</p>
+                                            <div className="flex space-x-6 border-t pt-4">
+                                                <button className="flex items-center space-x-2 text-slate-400 hover:text-red-500 transition-colors">
+                                                    <Icon name="Heart" className={post.isLiked ? "fill-red-500 text-red-500" : ""} />
+                                                    <span className="text-sm font-medium">{post.likes}</span>
+                                                </button>
+                                                <button className="flex items-center space-x-2 text-slate-400 hover:text-violet-600 transition-colors">
+                                                    <Icon name="MessageCircle" />
+                                                    <span className="text-sm font-medium text-slate-400">Reply</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </>
+                            ) : activeTab === 'messages' ? (
+                                <div className="bg-white rounded-2xl shadow-lg border border-slate-100 h-[600px] flex flex-col overflow-hidden">
+                                    <div className="p-4 border-b flex justify-between items-center bg-white">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">SM</div>
+                                            <h3 className="font-bold text-slate-800">Sarah Martinez</h3>
+                                        </div>
+                                        <div className="flex items-center text-[10px] font-mono text-green-500 uppercase tracking-widest bg-green-50 px-2 py-1 rounded">
+                                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                                            Secure P2P
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/30 custom-scrollbar">
+                                        {messages.map(m => (
+                                            <div key={m.id} className={`flex ${m.isMe ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${m.isMe ? 'bg-violet-600 text-white rounded-tr-none' : 'bg-white border text-slate-700 rounded-tl-none shadow-sm'}`}>
+                                                    {m.text}
+                                                    <div className={`text-[9px] mt-1 opacity-60 ${m.isMe ? 'text-right' : 'text-left'}`}>{m.time}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="p-4 bg-white border-t">
+                                        <div className="flex space-x-2">
+                                            <input 
+                                                value={currentChat}
+                                                onChange={(e) => setCurrentChat(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSendMsg()}
+                                                type="text" 
+                                                placeholder="Type an encrypted message..." 
+                                                className="flex-1 bg-slate-100 rounded-full px-5 py-2 outline-none focus:ring-2 focus:ring-violet-500 transition-all"
+                                            />
+                                            <button onClick={handleSendMsg} className="w-10 h-10 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 transition-transform">
+                                                <Icon name="Send" className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 text-slate-400">
+                                    <Icon name="Users" className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                    <p>Network management feature coming soon.</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Trending Sidebar */}
+                        <aside className="lg:col-span-3 space-y-6">
+                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                                <h3 className="font-bold text-slate-800 mb-4">Trending Tech</h3>
+                                {["#WebRTC", "#ZeroKnowledge", "#Decentralized", "#React2026"].map(tag => (
+                                    <div key={tag} className="flex justify-between items-center mb-4 group cursor-pointer">
+                                        <p className="text-violet-600 font-medium group-hover:underline text-sm">{tag}</p>
+                                        <Icon name="TrendingUp" className="w-3 h-3 text-slate-300" />
+                                    </div>
+                                ))}
+                            </div>
+                        </aside>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
-
-
